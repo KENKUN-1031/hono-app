@@ -1,7 +1,8 @@
 import { Hono } from 'hono'
 import { renderer } from './renderer'
 import { prettyJSON } from 'hono/pretty-json';
-import posts from "./blogs/blogs";
+// import posts from "./blogs/blogs";
+import posts from "./blogs/dbBlogs";
 import auth from "./auth/auth";
 import { basicAuth } from "hono/basic-auth";
 
