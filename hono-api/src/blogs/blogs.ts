@@ -1,73 +1,38 @@
-import { Hono } from "hono";
+// src/routes/blog.ts
+import { Hono } from 'hono'
+import type { Env } from '../types/env'
+import { getSupabaseClient } from '../lib/supabaseClient'
 
-const app = new Hono();
+const app = new Hono<{ Bindings: Env['Bindings'] }>()
 
-let blogPosts = [
-  {
-    id: "1",
-    title: "Blog1",
-    content: "Blog1 Posts",
-  },
-  {
-    id: "2",
-    title: "Blog2",
-    content: "Blog2 Posts",
-  },
-  {
-    id: "3",
-    title: "Blog3",
-    content: "Blog3 Posts",
+// 全件取得
+app.get('/', async (c) => {
+  const supabase = getSupabaseClient(c.env)
+  const { data, error } = await supabase.from('blog_posts').select('*')
+
+  if (error) {
+    return c.json({ error: error.message }, 500)
   }
-];
 
-app.get("/", (c) => c.json({posts: blogPosts }));
-
-app.get("/:id", (c) => { //idを指定してpostを取得
-  const id = c.req.param("id");
-  const post = blogPosts.find((p) => p.id === id);
-
-  if (post) {
-    return c.json(post);
-  } else {
-    return c.json({ message: "not found"}, 404);
-  }
-});
-
-app.post("/", async (c) => {
-  const {title, content} = await c.req.json<{
-    title: string;
-    content: string
-  }>();
-  const newPost = {id: String(blogPosts.length + 1), title, content};
-  blogPosts = [...blogPosts, newPost];
-  return c.json(newPost, 201);
+  return c.json(data)
 })
 
-app.put("/:id", async (c) => {
-  const id = c.req.param("id");
-  const index = blogPosts.findIndex((p) => p.id === id);
+// 単一ID指定で取得
+app.get('/:id', async (c) => {
+  const id = Number(c.req.param('id'))
+  const supabase = getSupabaseClient(c.env)
 
-  if (index === -1) {
-    return c.json({message: "Post not found"}, 404)
+  const { data, error } = await supabase
+    .from('blog_posts')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) {
+    return c.notFound()
   }
 
-  const {title, content} = await c.req.json();
-  blogPosts[index] = {...blogPosts[index], title, content};
-
-  return c.json(blogPosts[index]);
+  return c.json(data)
 })
 
-app.delete("/:id", async (c) => {
-  const id = c.req.param("id");
-  const index = blogPosts.findIndex((p) => p.id === id);
-
-  if (index === -1) {
-    return c.json({message: "Post not found"}, 404)
-  }
-
-  blogPosts = blogPosts.filter((p) => p.id !== id); //id以外のやつは残すという処理
-
-  return c.json({message: "blog post delted"});
-})
-
-export default app;// これを書くとindexで受け取れる
+export default app
