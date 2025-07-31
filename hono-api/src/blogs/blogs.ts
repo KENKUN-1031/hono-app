@@ -35,4 +35,39 @@ app.get('/:id', async (c) => {
   return c.json(data)
 })
 
+// 新規作成（Create）
+app.post('/', async (c) => {
+  const supabase = getSupabaseClient(c.env)
+  const { title, content } = await c.req.json()
+
+  const { data, error } = await supabase
+    .from('blog_posts')
+    .insert([{ title, content }])
+    .select()
+    .single()
+
+  if (error) {
+    return c.json({ error: error.message }, 500)
+  }
+
+  return c.json(data, 201)
+})
+
+// 削除（Delete）
+app.delete('/:id', async (c) => {
+  const id = Number(c.req.param('id'))
+  const supabase = getSupabaseClient(c.env)
+
+  const { error } = await supabase
+    .from('blog_posts')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    return c.json({ error: error.message }, 500)
+  }
+
+  return c.json({ message: '削除に成功しました' })
+})
+
 export default app
